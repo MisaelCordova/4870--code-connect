@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { http } from '../api'
 
 const createUser = (name, email, password) => ({
   id: Date.now().toString(),
@@ -25,40 +26,32 @@ export const useAuth = () => {
     setIsLoading(false)
   }, [])
 
-  const register = (name, email, password) => {
+  const register = async(name, email, password) => {
     try {
-      const existingUsers = JSON.parse(localStorage.getItem('auth_users') || '[]')
-      const userExists = existingUsers.find(u => u.email === email)
       
-      if (userExists) {
-        throw new Error('Usuário já existe com este email')
-      }
+      await http.post('auth/register', {
+          name,
+          email,
+          password
+     })
 
-      const newUser = createUser(name, email, password)
-      
-      existingUsers.push(newUser)
-      localStorage.setItem('auth_users', JSON.stringify(existingUsers))
-      
-      setUser(newUser)
-      localStorage.setItem('auth_user', JSON.stringify(newUser))
-      
-      return { success: true, user: newUser }
+      return { success: true }
     } catch (error) {
       return { success: false, error: error.message }
     }
   }
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     try {
-      const users = JSON.parse(localStorage.getItem('auth_users') || '[]')
-      const user = users.find(u => u.email === email && u.password === password)
-      
-      if (!user) {
-        throw new Error('Email ou senha incorretos')
-      }
+     const response = await http.post('auth/login', {
+        email,
+        password
+     })
+      const data = await response.data
 
-      setUser(user)
-      localStorage.setItem('auth_user', JSON.stringify(user))
+      setUser(data.user)
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+      localStorage.setItem('access_token', data.access_token)
       
       return { success: true, user }
     } catch (error) {
